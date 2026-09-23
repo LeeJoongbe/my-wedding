@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>이중배 · 허유리 결혼합니다</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Sans+KR:wght@300;400;500&family=Noto+Serif+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF6F0; --ink:#2E2B26; --ink-soft:#5B564C;
+    --sage:#6E7C5D; --sage-deep:#4C5740; --line:#DCD3C3; --blush:#E9DED2;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --paper:#211F1B; --ink:#EDE7DC; --ink-soft:#B9B2A4; --line:#3A362E; --blush:#332F28; }
+  }
+  :root[data-theme="dark"]{ --paper:#211F1B; --ink:#EDE7DC; --ink-soft:#B9B2A4; --line:#3A362E; --blush:#332F28; }
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Noto Sans KR', sans-serif; font-weight:300; -webkit-font-smoothing:antialiased; }
+  .invite{max-width:480px; margin:0 auto; overflow-x:hidden;}
+
+  .hero{ min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:14vh 8vw 8vh; position:relative; }
+  .hero::before{ content:""; position:absolute; inset:28px; border:1px solid var(--line); pointer-events:none; }
+  .eyebrow{ font-family:'Cormorant Garamond', serif; font-style:italic; font-size:15px; color:var(--sage-deep); letter-spacing:.06em; margin-bottom:22px; }
+  .names{ font-family:'Noto Serif KR', serif; font-weight:500; font-size:clamp(28px,7vw,36px); line-height:1.5; margin:0; }
+  .names .amp{ display:block; font-family:'Cormorant Garamond', serif; font-style:italic; font-size:22px; color:var(--sage); margin:6px 0; font-weight:400; }
+  .hero-date{ margin-top:34px; font-family:'Cormorant Garamond', serif; font-size:20px; letter-spacing:.08em; color:var(--ink-soft); }
+  .hero-tagline{ margin-top:16px; font-size:13px; color:var(--ink-soft); line-height:1.8; }
+  .scroll-cue{ position:absolute; bottom:calc(40px + env(safe-area-inset-bottom,0px)); font-size:11px; color:var(--ink-soft); letter-spacing:.2em; }
+  .scroll-cue::after{content:""; display:block; width:1px; height:26px; background:var(--line); margin:8px auto 0;}
+
+  section{padding:78px 9vw;}
+  .divider{width:36px; height:1px; background:var(--sage); margin:0 auto 26px;}
+
+  .message{text-align:center;}
+  .message p{ font-size:15px; line-height:2.05; color:var(--ink-soft); margin:0 0 1.4em; }
+  .message .signature{ margin-top:36px; font-family:'Noto Serif KR', serif; font-size:15px; color:var(--ink); line-height:1.9; }
+  .message .signature small{ font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; margin-right:8px; }
+
+  .gallery{padding-top:0;}
+  .gallery-head{text-align:center; margin-bottom:36px;}
+  .gallery-head h2{ font-family:'Noto Serif KR', serif; font-weight:500; font-size:19px; margin:0 0 8px; }
+  .gallery-head span{font-size:13px; color:var(--ink-soft);}
+  .frame{ aspect-ratio:4/5; border-radius:2px; margin-bottom:16px; background:linear-gradient(155deg, var(--blush), var(--paper)); display:flex; align-items:center; justify-content:center; border:1px solid var(--line); position:relative; overflow:hidden; }
+  .frame span{ font-family:'Cormorant Garamond', serif; font-style:italic; font-size:14px; color:var(--ink-soft); }
+
+  .note{ text-align:center; background:var(--blush); border-radius:2px; }
+  .note p{ font-family:'Noto Serif KR', serif; font-size:15.5px; line-height:1.95; color:var(--ink); margin:0 0 10px; }
+  .note p:last-child{margin-bottom:0; font-family:'Noto Sans KR',sans-serif; font-size:13px; color:var(--ink-soft);}
+
+  .share{text-align:center;}
+  .share h2{font-family:'Noto Serif KR', serif; font-weight:500; font-size:17px; margin:0 0 24px;}
+  .btn-row{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  button{ font-family:'Noto Sans KR', sans-serif; font-size:13.5px; font-weight:400; padding:13px 22px; border-radius:2px; border:1px solid var(--ink); background:transparent; color:var(--ink); cursor:pointer; }
+  button.primary{background:var(--sage-deep); border-color:var(--sage-deep); color:#fff;}
+  .toast{ margin-top:16px; font-size:12.5px; color:var(--sage-deep); height:16px; opacity:0; transition:opacity .25s; }
+  .toast.show{opacity:1;}
+
+  footer{ padding:40px 9vw calc(50px + env(safe-area-inset-bottom,0px)); text-align:center; font-size:11px; color:var(--ink-soft); letter-spacing:.05em; }
+</style>
+</head>
+<body>
+<div class="invite">
+
+  <section class="hero">
+    <div class="eyebrow">. wedding day .</div>
+    <h1 class="names">이중배<span class="amp">&amp;</span>허유리</h1>
+    <div class="hero-date">2026. 11. 01. SUN</div>
+    <div class="hero-tagline">우리 두 사람,<br>반짝이는 날에 아름다운 결혼을 합니다.</div>
+    <div class="scroll-cue">SCROLL</div>
+  </section>
+
+  <section class="message">
+    <div class="divider"></div>
+    <p>청명한 가을날, 소중한 만남을 사랑으로 이루어<br>양가 부모님의 축복 속에<br>저희만의 작은 결혼식을 치르게 되었습니다.</p>
+    <p>고마운 분들을 모시고 혼인의 예를 갖추어야 하나<br>그러지 못한 점에 깊은 양해를 구하며,<br>저희 두 사람의 첫걸음을 축복해 주시길 부탁드립니다.</p>
+    <p>서로를 만난 것이 축복임을 잊지 않고<br>아껴주고 배려하며 평생의 동반자로<br>서로의 버팀목이 되도록 하겠습니다.</p>
+    <p class="signature">
+      <small>박해연 의 장남</small>이 중 배<br>
+      <small>김영희 의 장녀</small>허 유 리
+    </p>
+  </section>
+
+  <section class="gallery">
+    <div class="gallery-head">
+      <h2>우리의 순간들</h2>
+      <span>웨딩 사진은 곧 채워질 예정입니다</span>
+    </div>
+  </section>
+
+  <section class="note">
+    <p>축의금은 정중히 사양합니다.</p>
+    <p>축하해주시는 마음만 감사히 받겠습니다.</p>
+  </section>
+
+  <section class="share">
+    <h2>소식 전하기</h2>
+    <div class="btn-row">
+      <button class="primary" onclick="shareInvite()">공유하기</button>
+      <button onclick="copyLink()">링크 복사</button>
+    </div>
+    <div class="toast" id="toast">링크가 복사되었습니다</div>
+  </section>
+
+  <footer>2026. 11. 01</footer>
+
+</div>
+
+<script>
+function showToast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 1800);
+}
+function copyLink(){
+  try{ navigator.clipboard.writeText(window.location.href); showToast('링크가 복사되었습니다'); }
+  catch(e){ showToast('복사에 실패했습니다'); }
+}
+function shareInvite(){
+  if(navigator.share){ navigator.share({ title: document.title, url: window.location.href }).catch(function(){}); }
+  else { copyLink(); }
+}
+</script>
+</body>
+</html>
