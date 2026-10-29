@@ -20,6 +20,7 @@
   html{scroll-padding-top:env(safe-area-inset-top,0px);}
   *{box-sizing:border-box;}
   body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Noto Sans KR', sans-serif; font-weight:300; -webkit-font-smoothing:antialiased; }
+  body.lock{overflow:hidden;}
   .invite{max-width:480px; margin:0 auto; overflow-x:hidden;}
 
   .hero{ min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:14vh 8vw 8vh; position:relative; }
@@ -40,12 +41,41 @@
   .message .signature{ margin-top:36px; font-family:'Noto Serif KR', serif; font-size:15px; color:var(--ink); line-height:1.9; }
   .message .signature small{ font-size:12px; color:var(--ink-soft); font-family:'Noto Sans KR',sans-serif; margin-right:8px; }
 
-  .gallery{padding-top:0;}
-  .gallery-head{text-align:center; margin-bottom:36px;}
+  /* ===== 갤러리 ===== */
+  .gallery{padding:0 5vw 78px;}
+  .gallery-head{text-align:center; margin-bottom:28px;}
   .gallery-head h2{ font-family:'Noto Serif KR', serif; font-weight:500; font-size:19px; margin:0 0 8px; }
   .gallery-head span{font-size:13px; color:var(--ink-soft);}
-  .frame{ aspect-ratio:4/5; border-radius:2px; margin-bottom:16px; background:linear-gradient(155deg, var(--blush), var(--paper)); display:flex; align-items:center; justify-content:center; border:1px solid var(--line); position:relative; overflow:hidden; }
-  .frame span{ font-family:'Cormorant Garamond', serif; font-style:italic; font-size:14px; color:var(--ink-soft); }
+  .gallery-empty{ text-align:center; font-size:13px; color:var(--ink-soft); padding:30px 0; }
+  .thumb{
+    display:block; width:100%; padding:0; border:1px solid var(--line); border-radius:2px;
+    background:linear-gradient(155deg, var(--blush), var(--paper)); overflow:hidden; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .thumb img{ display:block; width:100%; height:100%; object-fit:cover; }
+  .thumb.big{ aspect-ratio:4/5; margin-bottom:6px; }
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .grid .thumb{ aspect-ratio:1/1; }
+  .grid .thumb.extra{ display:none; }
+  .grid.open .thumb.extra{ display:block; }
+  .more-wrap{ text-align:center; margin-top:22px; }
+  .more-wrap button{ min-width:140px; }
+
+  /* ===== 뷰어 ===== */
+  .viewer{
+    position:fixed; inset:0; z-index:100; background:#000; color:#fff; display:none;
+    touch-action:pan-y; user-select:none; -webkit-user-select:none;
+  }
+  .viewer.show{display:block;}
+  .v-track{ display:flex; height:100%; will-change:transform; }
+  .v-slide{ flex:0 0 100%; height:100%; display:flex; align-items:center; justify-content:center; padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px); }
+  .v-slide img{ max-width:100%; max-height:100%; object-fit:contain; -webkit-user-drag:none; pointer-events:none; }
+  .v-top{ position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:calc(14px + env(safe-area-inset-top,0px)) 16px 14px; background:linear-gradient(#0008, transparent); z-index:2; }
+  .v-count{ font-size:13px; letter-spacing:.1em; font-weight:400; }
+  .viewer button.v-btn{ border:none; background:transparent; color:#fff; padding:6px 10px; font-size:26px; line-height:1; }
+  .viewer button.v-nav{ position:absolute; top:50%; transform:translateY(-50%); z-index:2; font-size:34px; padding:14px 12px; opacity:.85; }
+  .v-prev{left:2px;} .v-next{right:2px;}
+  @media (hover:none){ .v-nav{display:none;} }
 
   .note{ text-align:center; background:var(--blush); border-radius:2px; }
   .note p{ font-family:'Noto Serif KR', serif; font-size:15.5px; line-height:1.95; color:var(--ink); margin:0 0 10px; }
@@ -87,7 +117,9 @@
   <section class="gallery">
     <div class="gallery-head">
       <h2>우리의 순간들</h2>
-      <span>웨딩 사진은 곧 채워질 예정입니다</span>
+    </div>
+    <div id="galleryBody">
+      <div class="gallery-empty">사진을 불러오는 중입니다</div>
     </div>
   </section>
 
@@ -109,7 +141,217 @@
 
 </div>
 
+<!-- 사진 뷰어 -->
+<div class="viewer" id="viewer" aria-hidden="true">
+  <div class="v-top">
+    <span class="v-count" id="vCount"></span>
+    <button class="v-btn" id="vClose" aria-label="닫기">&times;</button>
+  </div>
+  <button class="v-btn v-nav v-prev" id="vPrev" aria-label="이전 사진">&#8249;</button>
+  <button class="v-btn v-nav v-next" id="vNext" aria-label="다음 사진">&#8250;</button>
+  <div class="v-track" id="vTrack"></div>
+</div>
+
 <script>
+/* ===== 사진 설정 =====
+   images/01.jpg, 02.jpg, ... 를 순서대로 찾아서, 없는 번호가 나오면 거기까지만 보여줍니다.
+   (번호는 01부터 빈 번호 없이 연속, 확장자는 소문자 .jpg) */
+var IMG_DIR   = 'images/';
+var IMG_EXT   = '.jpg';
+var MAX_PHOTOS = 40;   // 최대 탐색 장수 (안전장치)
+var FIRST_SHOW = 9;    // 처음에 보일 그리드 장수 (큰 첫 장 제외)
+
+var photos = [];       // 실제로 존재하는 사진 경로
+var current = 0;       // 뷰어에서 보고 있는 사진 번호
+var thumbs = [];       // 목록의 썸네일 버튼들
+var viewerOpen = false;
+
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+
+function probe(i){
+  return new Promise(function(resolve){
+    var img = new Image();
+    img.onload  = function(){ resolve(true); };
+    img.onerror = function(){ resolve(false); };
+    img.src = IMG_DIR + pad(i) + IMG_EXT;
+  });
+}
+
+function loadPhotos(){
+  var jobs = [];
+  for(var i = 1; i <= MAX_PHOTOS; i++){ jobs.push(probe(i)); }
+  Promise.all(jobs).then(function(results){
+    var n = 0;
+    while(n < results.length && results[n]){ n++; }   // 처음 실패한 번호 직전까지
+    for(var i = 1; i <= n; i++){ photos.push(IMG_DIR + pad(i) + IMG_EXT); }
+    renderGallery();
+  });
+}
+
+function makeThumb(index, cls){
+  var b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'thumb ' + (cls || '');
+  b.setAttribute('aria-label', '사진 ' + (index + 1) + ' 크게 보기');
+  var img = document.createElement('img');
+  img.src = photos[index];
+  img.alt = '웨딩 사진 ' + (index + 1);
+  img.decoding = 'async';
+  if(index > 0){ img.loading = 'lazy'; }
+  b.appendChild(img);
+  b.addEventListener('click', function(){ openViewer(index); });
+  thumbs[index] = b;
+  return b;
+}
+
+function renderGallery(){
+  var body = document.getElementById('galleryBody');
+  body.innerHTML = '';
+  if(photos.length === 0){
+    body.innerHTML = '<div class="gallery-empty">웨딩 사진은 곧 채워질 예정입니다</div>';
+    return;
+  }
+  body.appendChild(makeThumb(0, 'big'));
+  if(photos.length === 1){ return; }
+
+  var grid = document.createElement('div');
+  grid.className = 'grid';
+  grid.id = 'grid';
+  for(var i = 1; i < photos.length; i++){
+    grid.appendChild(makeThumb(i, (i > FIRST_SHOW) ? 'extra' : ''));
+  }
+  body.appendChild(grid);
+
+  if(photos.length - 1 > FIRST_SHOW){
+    var wrap = document.createElement('div');
+    wrap.className = 'more-wrap';
+    wrap.id = 'moreWrap';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '더보기';
+    btn.addEventListener('click', expandGrid);
+    wrap.appendChild(btn);
+    body.appendChild(wrap);
+  }
+}
+
+function expandGrid(){
+  var g = document.getElementById('grid');
+  if(g){ g.classList.add('open'); }
+  var w = document.getElementById('moreWrap');
+  if(w){ w.style.display = 'none'; }
+}
+
+/* ===== 뷰어 ===== */
+var viewer = document.getElementById('viewer');
+var track  = document.getElementById('vTrack');
+var vCount = document.getElementById('vCount');
+var slides = [];
+
+function buildSlides(){
+  if(slides.length){ return; }
+  for(var i = 0; i < photos.length; i++){
+    var s = document.createElement('div');
+    s.className = 'v-slide';
+    var img = document.createElement('img');
+    img.alt = '웨딩 사진 ' + (i + 1);
+    img.draggable = false;
+    s.appendChild(img);
+    track.appendChild(s);
+    slides.push(img);
+  }
+}
+
+function loadNear(i){
+  for(var k = i - 1; k <= i + 1; k++){
+    if(k >= 0 && k < slides.length && !slides[k].getAttribute('src')){
+      slides[k].src = photos[k];
+    }
+  }
+}
+
+function show(i, animate){
+  if(i < 0 || i >= photos.length){ return; }
+  current = i;
+  loadNear(i);
+  track.style.transition = animate ? 'transform .28s ease' : 'none';
+  track.style.transform = 'translateX(' + (-i * 100) + '%)';
+  vCount.textContent = (i + 1) + ' / ' + photos.length;
+}
+
+function openViewer(i){
+  buildSlides();
+  viewer.classList.add('show');
+  viewer.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('lock');
+  viewerOpen = true;
+  show(i, false);
+  history.pushState({viewer:true}, '');   // 뒤로 가기 한 번이 뷰어 닫기가 되도록
+}
+
+function hideViewer(){
+  if(!viewerOpen){ return; }
+  viewerOpen = false;
+  viewer.classList.remove('show');
+  viewer.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('lock');
+  /* 마지막으로 본 사진이 접혀 있으면 펼치고, 그 위치로 이동 */
+  var t = thumbs[current];
+  if(t){
+    if(t.classList.contains('extra')){ expandGrid(); }
+    t.scrollIntoView({block:'center'});
+  }
+}
+
+function closeViewer(){
+  if(!viewerOpen){ return; }
+  history.back();   // popstate 에서 hideViewer 실행
+}
+
+window.addEventListener('popstate', function(){ hideViewer(); });
+
+document.getElementById('vClose').addEventListener('click', closeViewer);
+document.getElementById('vPrev').addEventListener('click', function(){ show(current - 1, true); });
+document.getElementById('vNext').addEventListener('click', function(){ show(current + 1, true); });
+
+document.addEventListener('keydown', function(e){
+  if(!viewerOpen){ return; }
+  if(e.key === 'ArrowLeft'){ show(current - 1, true); }
+  else if(e.key === 'ArrowRight'){ show(current + 1, true); }
+  else if(e.key === 'Escape'){ closeViewer(); }
+});
+
+/* 스와이프 */
+var startX = 0, startY = 0, dx = 0, dragging = false, horizontal = null;
+viewer.addEventListener('touchstart', function(e){
+  if(e.touches.length !== 1){ return; }
+  startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+  dx = 0; dragging = true; horizontal = null;
+  track.style.transition = 'none';
+}, {passive:true});
+viewer.addEventListener('touchmove', function(e){
+  if(!dragging){ return; }
+  var mx = e.touches[0].clientX - startX;
+  var my = e.touches[0].clientY - startY;
+  if(horizontal === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)){
+    horizontal = Math.abs(mx) > Math.abs(my);
+  }
+  if(!horizontal){ return; }
+  dx = mx;
+  var edge = (current === 0 && dx > 0) || (current === photos.length - 1 && dx < 0);
+  if(edge){ dx = dx * 0.3; }   // 처음/끝에서는 저항감
+  track.style.transform = 'translateX(calc(' + (-current * 100) + '% + ' + dx + 'px))';
+}, {passive:true});
+viewer.addEventListener('touchend', function(){
+  if(!dragging){ return; }
+  dragging = false;
+  var threshold = Math.min(80, window.innerWidth * 0.2);
+  if(horizontal && dx < -threshold){ show(Math.min(current + 1, photos.length - 1), true); }
+  else if(horizontal && dx > threshold){ show(Math.max(current - 1, 0), true); }
+  else { show(current, true); }
+});
+
+/* ===== 공유 ===== */
 function showToast(msg){
   var t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
@@ -123,6 +365,8 @@ function shareInvite(){
   if(navigator.share){ navigator.share({ title: document.title, url: window.location.href }).catch(function(){}); }
   else { copyLink(); }
 }
+
+loadPhotos();
 </script>
 </body>
 </html>
